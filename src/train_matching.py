@@ -13,7 +13,9 @@ from episodic_sampler import (
 
 from config import *
 
-## Load Model
+# ==========================================
+# MODEL
+# ==========================================
 
 device = DEVICE
 
@@ -24,7 +26,11 @@ optimizer = torch.optim.Adam(
     lr=LR
 )
 
-## Training Episode Function
+TEMPERATURE = 0.1
+
+# ==========================================
+# TRAIN
+# ==========================================
 
 def train_episode(
     support_set,
@@ -38,7 +44,11 @@ def train_episode(
     support_embs = []
     support_labels = []
 
-    for img_path,label in support_set:
+    # ----------------------------------
+    # SUPPORT EMBEDDING
+    # ----------------------------------
+
+    for img_path, label in support_set:
 
         img = load_image(
             img_path
@@ -60,9 +70,24 @@ def train_episode(
         support_embs
     )
 
+    # FCE SUPPORT
+    support_embs = model.contextualize(
+        support_embs
+    )
+
+    support_embs = F.normalize(
+        support_embs,
+        p=2,
+        dim=1
+    )
+
+    # ----------------------------------
+    # QUERY LOOP
+    # ----------------------------------
+
     losses = []
 
-    for img_path,true_label in query_set:
+    for img_path, true_label in query_set:
 
         img = load_image(
             img_path
@@ -71,15 +96,14 @@ def train_episode(
         img = img.unsqueeze(0).to(device)
 
         query_emb = model(img)
-        
-        query_emb = F.normalize(
-            query_emb,
-            p=2,
-            dim=1
+
+        # FCE QUERY
+        query_emb = model.contextualize_query(
+            query_emb
         )
 
-        support_embs = F.normalize(
-            support_embs,
+        query_emb = F.normalize(
+            query_emb,
             p=2,
             dim=1
         )
@@ -91,7 +115,7 @@ def train_episode(
         )
 
         attention = torch.softmax(
-            similarities,
+            similarities / TEMPERATURE,
             dim=0
         )
 
@@ -102,24 +126,38 @@ def train_episode(
         )
 
         probs = torch.zeros(
-            n_classes
-        ).to(device)
+            n_classes,
+            device=device
+        )
 
-        for att,label in zip(
+        for att, label in zip(
             attention,
-            support_labels):
+            support_labels
+        ):
 
             probs[label] += att
 
         probs = probs.unsqueeze(0)
 
-        target = torch.tensor([true_label]).to(device)
+        target = torch.tensor(
+            [true_label],
+            device=device
+        )
 
-        loss = F.nll_loss(torch.log(probs + 1e-8), target)
+        loss = F.nll_loss(
+            torch.log(
+                probs + 1e-8
+            ),
+            target
+        )
 
-        losses.append(loss)
+        losses.append(
+            loss
+        )
 
-    loss = torch.stack(losses).mean()
+    loss = torch.stack(
+        losses
+    ).mean()
 
     loss.backward()
 
@@ -127,7 +165,9 @@ def train_episode(
 
     return loss.item()
 
-## Validation Episode Function
+# ==========================================
+# VALIDATION
+# ==========================================
 
 @torch.no_grad()
 def validate_episode(
@@ -140,7 +180,11 @@ def validate_episode(
     support_embs = []
     support_labels = []
 
-    for img_path,label in support_set:
+    # ----------------------------------
+    # SUPPORT EMBEDDING
+    # ----------------------------------
+
+    for img_path, label in support_set:
 
         img = load_image(
             img_path
@@ -161,23 +205,43 @@ def validate_episode(
     support_embs = torch.stack(
         support_embs
     )
-    
+
     support_embs = model.contextualize(
         support_embs
+    )
+
+    support_embs = F.normalize(
+        support_embs,
+        p=2,
+        dim=1
     )
 
     correct = 0
     total = 0
 
-    for img_path,true_label in query_set:
+    # ----------------------------------
+    # QUERY LOOP
+    # ----------------------------------
+
+    for img_path, true_label in query_set:
 
         img = load_image(
             img_path
         )
 
         img = img.unsqueeze(0).to(device)
-        
+
         query_emb = model(img)
+
+        query_emb = model.contextualize_query(
+            query_emb
+        )
+
+        query_emb = F.normalize(
+            query_emb,
+            p=2,
+            dim=1
+        )
 
         similarities = F.cosine_similarity(
             query_emb,
@@ -186,7 +250,7 @@ def validate_episode(
         )
 
         attention = torch.softmax(
-            similarities,
+            similarities / TEMPERATURE,
             dim=0
         )
 
@@ -197,10 +261,11 @@ def validate_episode(
         )
 
         probs = torch.zeros(
-            n_classes
-        ).to(device)
+            n_classes,
+            device=device
+        )
 
-        for att,label in zip(
+        for att, label in zip(
             attention,
             support_labels
         ):
@@ -219,31 +284,39 @@ def validate_episode(
 
     return correct / total
 
-# Sample Episode Function
+# ==========================================
+# SAMPLER
+# ==========================================
 
 train_sampler = EpisodicSampler(
     TRAIN_DIR
 )
 
 val_sampler = EpisodicSampler(
-    TEST_DIR# VAL_DIR
+    TEST_DIR
 )
 
-## Train Loop
+# ==========================================
+# TRAIN LOOP
+# ==========================================
 
 best_acc = 0
 
-for epoch in range(EPOCHS):
+for epoch in range(
+    EPOCHS
+):
 
     train_losses = []
 
-    for _ in range(TRAIN_EPISODES):
+    for _ in range(
+        TRAIN_EPISODES
+    ):
 
         shot = random.choice(
-            [1,3,5]
+            [1, 3, 5]
         )
 
-        support_set,query_set = \
+        support_set, query_set = \
             train_sampler.sample_episode(
                 n_way=3,
                 k_shot=shot,
@@ -261,13 +334,15 @@ for epoch in range(EPOCHS):
 
     val_accs = []
 
-    for _ in range(VAL_EPISODES):
+    for _ in range(
+        VAL_EPISODES
+    ):
 
         shot = random.choice(
-            [1,3,5]
+            [1, 3, 5]
         )
 
-        support_set,query_set = \
+        support_set, query_set = \
             val_sampler.sample_episode(
                 n_way=3,
                 k_shot=shot,
@@ -285,30 +360,37 @@ for epoch in range(EPOCHS):
 
     mean_loss = sum(
         train_losses
-    ) / len(train_losses)
+    ) / len(
+        train_losses
+    )
 
     mean_acc = sum(
         val_accs
-    ) / len(val_accs)
+    ) / len(
+        val_accs
+    )
 
     print(
-
-        f"Epoch {epoch+1}"
-
-        f" Loss={mean_loss:.4f}"
-
-        f" ValAcc={mean_acc:.4f}"
-
+        f"Epoch {epoch+1} "
+        f"Loss={mean_loss:.4f} "
+        f"ValAcc={mean_acc:.4f}"
     )
 
     if mean_acc > best_acc:
 
         best_acc = mean_acc
 
+        os.makedirs(
+            "../checkpoints/matching",
+            exist_ok=True
+        )
+
         torch.save(
-
             model.state_dict(),
-
             "../checkpoints/matching/best_matching.pth"
+        )
 
+        print(
+            f"Best Model Saved "
+            f"Acc={best_acc:.4f}"
         )

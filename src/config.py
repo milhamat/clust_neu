@@ -1,16 +1,16 @@
 import torch
 
-##NEU
+##NEU #1
 TRAIN_DIR = "../datasets/NEU/train_flat"
 TEST_DIR = "../datasets/NEU/test_flat"
 
-##CLUST
-# TRAIN_DIR = "../datasets/Clust/train_flat"
-# TEST_DIR = "../datasets/Clust/test_flat"
-
-# #SPLIT
+##SPLIT #2
 # TRAIN_DIR = "../datasets/Split/train_flat"
 # TEST_DIR = "../datasets/Split/test_flat"
+
+##CLUST #3
+# TRAIN_DIR = "../datasets/Clust/train_flat"
+# TEST_DIR = "../datasets/Clust/test_flat"
 
 IMG_SIZE = 200 #224
 
@@ -41,7 +41,3 @@ VAL_EPISODES = 50#200
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 CHECKPOINT_DIR = "../checkpoints/siamese"
-
-# TRAIN_EPISODES = 100
-# VAL_EPISODES = 50
-# EPOCHS = 30

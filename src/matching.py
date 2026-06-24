@@ -2,31 +2,38 @@ import torch
 import torch.nn as nn
 
 from backbone import ResNet18Embedding
+from config import EMBED_DIM
 
 
 class MatchingNetwork(nn.Module):
 
-    def __init__(
-        self,
-        embed_dim=128,
-        hidden_dim=128
-    ):
+    def __init__(self):
 
         super().__init__()
 
         self.encoder = ResNet18Embedding()
 
+        # Full Context Embedding (Support Set)
         self.fce = nn.LSTM(
-            input_size=embed_dim,
-            hidden_size=hidden_dim,
+            input_size=EMBED_DIM,
+            hidden_size=EMBED_DIM,
             num_layers=1,
             batch_first=True,
             bidirectional=True
         )
 
+        # BiLSTM output = EMBED_DIM * 2
         self.projection = nn.Linear(
-            hidden_dim * 2,
-            embed_dim
+            EMBED_DIM * 2,
+            EMBED_DIM
+        )
+
+        # Query Context Encoder
+        self.query_lstm = nn.LSTM(
+            input_size=EMBED_DIM,
+            hidden_size=EMBED_DIM,
+            num_layers=1,
+            batch_first=True
         )
 
     def forward(self, x):
@@ -35,37 +42,54 @@ class MatchingNetwork(nn.Module):
 
         return emb
 
+    # =====================================
+    # SUPPORT FCE
+    # =====================================
+
     def contextualize(
         self,
         support_embs
     ):
 
+        # support_embs
+        # [N, EMBED_DIM]
+
         out, _ = self.fce(
             support_embs.unsqueeze(0)
         )
 
+        # [1, N, EMBED_DIM*2]
+        out = out.squeeze(0)
+
         out = self.projection(
-            out.squeeze(0)
+            out
         )
+
+        # residual connection
+        out = support_embs + out
 
         return out
 
-# import torch
-# import torch.nn as nn
+    # =====================================
+    # QUERY FCE
+    # =====================================
 
-# from backbone import ResNet18Embedding
+    def contextualize_query(
+        self,
+        query_emb
+    ):
 
+        # query_emb
+        # [1, EMBED_DIM]
 
-# class MatchingNetwork(nn.Module):
+        out, _ = self.query_lstm(
+            query_emb.unsqueeze(0)
+        )
 
-#     def __init__(self):
+        # [1,1,EMBED_DIM]
+        out = out.squeeze(0)
 
-#         super().__init__()
+        # residual connection
+        out = query_emb + out
 
-#         self.encoder = ResNet18Embedding()
-
-#     def forward(self, x):
-
-#         return self.encoder(x)
-    
-    
+        return out
