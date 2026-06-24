@@ -1,7 +1,6 @@
 import torch.nn as nn
-
 from torchvision import models
-
+import torch.nn.functional as F
 from config import EMBED_DIM
 
 
@@ -36,5 +35,12 @@ class ResNet18Embedding(nn.Module):
         x = self.backbone(x)
 
         x = self.embedding(x)
+        
+        # normalization
+        x = F.normalize(
+            x,
+            p=2,
+            dim=1
+        )
 
         return x

@@ -14,7 +14,7 @@ TEST_DIR = "../datasets/NEU/test_flat"
 
 IMG_SIZE = 200 #224
 
-EMBED_DIM = 128
+EMBED_DIM = 512#128
 
 BATCH_SIZE = 32
 

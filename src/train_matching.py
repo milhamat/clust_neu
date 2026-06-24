@@ -88,7 +88,6 @@ def train_episode(
             query_emb,
             support_embs,
             dim=1
-
         )
 
         attention = torch.softmax(
@@ -108,31 +107,19 @@ def train_episode(
 
         for att,label in zip(
             attention,
-            support_labels
-        ):
+            support_labels):
 
             probs[label] += att
 
         probs = probs.unsqueeze(0)
 
-        target = torch.tensor(
-            [true_label]
-        ).to(device)
+        target = torch.tensor([true_label]).to(device)
 
-        loss = F.nll_loss(
-            torch.log(
-                probs + 1e-8
-            ),
-            target
-        )
+        loss = F.nll_loss(torch.log(probs + 1e-8), target)
 
-        losses.append(
-            loss
-        )
+        losses.append(loss)
 
-    loss = torch.stack(
-        losses
-    ).mean()
+    loss = torch.stack(losses).mean()
 
     loss.backward()
 

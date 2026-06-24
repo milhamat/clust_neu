@@ -85,6 +85,12 @@ def train_episode(
             img = img.unsqueeze(0).to(device)
 
             emb = model(img)
+            
+            emb = F.normalize(
+                emb,
+                p=2,
+                dim=1
+            )
 
             embs.append(
                 emb.squeeze(0)
@@ -105,25 +111,32 @@ def train_episode(
         img = img.unsqueeze(0).to(device)
 
         query_emb = model(img)
+        
+        query_emb = F.normalize(
+            query_emb,
+            p=2,
+            dim=1
+        )
 
         dists = []
 
         for label in labels:
 
             proto = prototypes[label]
+            #Distance between query embedding and prototype
+            dist = torch.norm(query_emb.squeeze(0) - proto)
 
-            dist = torch.norm(
-                query_emb.squeeze(0)
-                -
-                proto
-            )
+            dists.append(-dist)
 
-            dists.append(
-                -dist
-            )
+        # logits = torch.stack(
+        #     dists
+        # ).unsqueeze(0)
+        
+        temperature = 0.5
 
-        logits = torch.stack(
-            dists
+        logits = (
+            torch.stack(dists)
+            / temperature
         ).unsqueeze(0)
 
         target = torch.tensor(
@@ -210,22 +223,22 @@ def validate_episode(
         img = img.unsqueeze(0).to(device)
 
         query_emb = model(img)
+        
+        query_emb = F.normalize(
+            query_emb,
+            p=2,
+            dim=1
+        )
 
         dists = []
 
         for label in labels:
 
             proto = prototypes[label]
+            #Distance between query embedding and prototype
+            dist = torch.norm(query_emb.squeeze(0) - proto)
 
-            dist = torch.norm(
-                query_emb.squeeze(0)
-                -
-                proto
-            )
-
-            dists.append(
-                dist.item()
-            )
+            dists.append(dist.item())
 
         pred = labels[
             dists.index(
