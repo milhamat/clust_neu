@@ -71,13 +71,22 @@ def train_episode(
         img = img.unsqueeze(0).to(device)
 
         query_emb = model(img)
+        
+        query_emb = F.normalize(
+            query_emb,
+            p=2,
+            dim=1
+        )
+
+        support_embs = F.normalize(
+            support_embs,
+            p=2,
+            dim=1
+        )
 
         similarities = F.cosine_similarity(
-
             query_emb,
-
             support_embs,
-
             dim=1
 
         )
@@ -165,6 +174,10 @@ def validate_episode(
     support_embs = torch.stack(
         support_embs
     )
+    
+    support_embs = model.contextualize(
+        support_embs
+    )
 
     correct = 0
     total = 0
@@ -176,17 +189,13 @@ def validate_episode(
         )
 
         img = img.unsqueeze(0).to(device)
-
+        
         query_emb = model(img)
 
         similarities = F.cosine_similarity(
-
             query_emb,
-
             support_embs,
-
             dim=1
-
         )
 
         attention = torch.softmax(
