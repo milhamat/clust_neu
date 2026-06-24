@@ -1,0 +1,64 @@
+project/
+│
+├── datasets/
+│   ├── train_flat/
+│   └── test_flat/
+│
+├── src/
+│   ├── dataset.py
+│   ├── episodic_sampler.py
+│   ├── backbone.py
+│   ├── siamese.py
+│   ├── prototypical.py
+│   ├── matching.py
+│   ├── train_siamese.py
+│   ├── train_proto.py
+│   ├── train_matching.py
+│   └── evaluate.py
+│
+└── results/
+
+--------------------------------------------------------
+project/
+│
+├── datasets/
+│   ├── train_flat/
+│   └── test_flat/
+│
+├── checkpoints/
+│   ├── siamese/
+│   ├── proto/
+│   └── matching/
+│
+├── results/
+│   ├── siamese/
+│   ├── proto/
+│   └── matching/
+│
+├── src/
+│   ├── config.py
+│   ├── dataset.py
+│   ├── episodic_sampler.py
+│   ├── backbone.py
+│   ├── siamese.py
+│   ├── prototypical.py
+│   ├── matching.py
+│   ├── train_siamese.py
+│   ├── train_proto.py
+│   ├── train_matching.py
+│   └── evaluate.py
+│
+└── requirements.txt
+
+---------------------------------------------
+     
+Train Class/
+-inclusion,
+-patches,
+-rolled_in_scale,
+
+Test Class/
+-crazing,
+-pitted_surface,
+-scratch,
+
